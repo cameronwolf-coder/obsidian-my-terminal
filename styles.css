@@ -211,8 +211,8 @@
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: var(--background-primary);
-  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  border-bottom: 2px solid var(--background-modifier-border);
   flex-shrink: 0;
   font-family: var(--font-interface);
 }
@@ -239,28 +239,31 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border: 1px solid var(--background-modifier-border);
+  border: 1px solid transparent;
   border-radius: 8px;
   cursor: pointer;
   font-size: 12px;
   font-weight: 450;
   letter-spacing: 0.01em;
-  color: var(--text-muted);
+  color: var(--text-faint);
   white-space: nowrap;
   user-select: none;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
 .vin-terminal-tab:hover {
-  color: var(--text-normal);
-  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
-  background: var(--background-secondary);
+  color: var(--text-muted);
+  border-color: var(--background-modifier-border);
+  background: var(--background-primary);
 }
 
 .vin-terminal-tab.is-active {
   color: var(--interactive-accent);
   border-color: var(--interactive-accent);
-  background: rgba(var(--interactive-accent-rgb, 0, 122, 255), 0.08);
+  border-width: 2px;
+  background: var(--background-primary);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--interactive-accent), 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
 
@@ -510,8 +513,8 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   padding: 44px 10px 12px;
   width: 200px;
   min-width: 200px;
-  background: var(--background-primary);
-  border-right: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  border-right: 2px solid var(--background-modifier-border);
   flex-shrink: 0;
   font-family: var(--font-interface);
 }
@@ -530,28 +533,31 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border: 1px solid var(--background-modifier-border);
+  border: 1px solid transparent;
   border-radius: 8px;
   cursor: pointer;
   font-size: 12px;
   font-weight: 450;
   letter-spacing: 0.01em;
-  color: var(--text-muted);
+  color: var(--text-faint);
   white-space: nowrap;
   user-select: none;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
 .vin-fs-tab:hover {
-  color: var(--text-normal);
-  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
-  background: var(--background-secondary);
+  color: var(--text-muted);
+  border-color: var(--background-modifier-border);
+  background: var(--background-primary);
 }
 
 .vin-fs-tab.is-active {
   color: var(--interactive-accent);
   border-color: var(--interactive-accent);
-  background: rgba(var(--interactive-accent-rgb, 0, 122, 255), 0.08);
+  border-width: 2px;
+  background: var(--background-primary);
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--interactive-accent), 1px 0 4px rgba(0, 0, 0, 0.12);
 }
 
 .vin-fs-tab-label {
@@ -915,4 +921,65 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   font-size: 11.5px;
   color: var(--text-faint);
   font-family: var(--font-interface);
+}
+
+/* --- Settings page --- */
+.vin-settings-desc {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0 0 20px;
+  font-family: var(--font-interface);
+}
+
+.vin-settings-section {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 28px 0 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-family: var(--font-interface);
+}
+
+.vin-settings-section:first-of-type {
+  margin-top: 8px;
+}
+
+.vin-settings-shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+  font-family: var(--font-interface);
+}
+
+.vin-settings-shortcuts-table tr {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.vin-settings-shortcuts-table td {
+  padding: 7px 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+
+.vin-settings-shortcuts-table td:first-child {
+  width: 55%;
+  color: var(--text-normal);
+}
+
+.vin-settings-shortcuts-table kbd {
+  display: inline-block;
+  padding: 2px 7px;
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  color: var(--interactive-accent);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  white-space: nowrap;
 }

@@ -1448,18 +1448,41 @@ class TerminalSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 		containerEl.createEl("h2", { text: "My Terminal" });
+		containerEl.createEl("p", {
+			text: "Embedded zsh terminal with tabs, bookmarks, wiki-link autocomplete, and output capture.",
+			cls: "vin-settings-desc",
+		});
+
+		containerEl.createEl("span", { text: "Paste", cls: "vin-settings-section" });
 		new Setting(containerEl)
 			.setName("Strip formatting on paste")
-			.setDesc("Remove ANSI color codes and escape sequences when pasting text into the terminal. Fixes garbled output when copying from Claude Code or other terminal emulators. Change takes effect on the next paste.")
+			.setDesc("Remove ANSI color codes and escape sequences on paste. Fixes garbled output when copying from Claude Code or other terminal emulators.")
 			.addToggle((t) => t.setValue(this.plugin.settings.stripFormattingOnPaste).onChange(async (v) => { this.plugin.settings.stripFormattingOnPaste = v; await this.plugin.saveSettings(); }));
+
+		containerEl.createEl("span", { text: "Navigation", cls: "vin-settings-section" });
 		new Setting(containerEl)
 			.setName("Auto-cd to active note on open")
 			.setDesc("When you open a new terminal tab, start in the directory of your currently active note instead of the vault root.")
 			.addToggle((t) => t.setValue(this.plugin.settings.autoCdOnOpen).onChange(async (v) => { this.plugin.settings.autoCdOnOpen = v; await this.plugin.saveSettings(); }));
 		new Setting(containerEl)
 			.setName("Follow active note")
-			.setDesc("When you switch to a different note, automatically cd the terminal to that note's directory. 300ms debounced — rapid note switching sends only one cd command.")
+			.setDesc("When you switch to a different note, automatically cd the terminal to that note's directory. Debounced 300ms.")
 			.addToggle((t) => t.setValue(this.plugin.settings.followActiveNote).onChange(async (v) => { this.plugin.settings.followActiveNote = v; await this.plugin.saveSettings(); }));
+
+		containerEl.createEl("span", { text: "Keyboard shortcuts", cls: "vin-settings-section" });
+		const table = containerEl.createEl("table", { cls: "vin-settings-shortcuts-table" });
+		const shortcuts: [string, string][] = [
+			["Capture output to note", "⌘⇧S"],
+			["Add bookmark", "⌘⇧M"],
+			["Next bookmark", "⌘⇧]"],
+			["Previous bookmark", "⌘⇧["],
+			["Toggle fullscreen", "via command palette"],
+		];
+		for (const [label, key] of shortcuts) {
+			const row = table.createEl("tr");
+			row.createEl("td", { text: label });
+			row.createEl("td").createEl("kbd", { text: key });
+		}
 	}
 }
 
