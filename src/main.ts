@@ -10,6 +10,7 @@ import {
 	SuggestModal,
 	TFile,
 	WorkspaceLeaf,
+	addIcon,
 	setIcon,
 } from "obsidian";
 import { Terminal } from "@xterm/xterm";
@@ -60,6 +61,15 @@ interface CaptureOption {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const VIEW_TYPE = "vin-terminal-view";
+
+// Wolf terminal icon: terminal window with pointed wolf ears
+const WOLF_ICON_ID = "wolf-terminal";
+const WOLF_ICON_SVG =
+	'<rect x="2" y="8" width="20" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>' +
+	'<path d="M5 8L3 2L10 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+	'<path d="M19 8L21 2L14 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+	'<path d="M6 12l3 2.5-3 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+	'<line x1="12" y1="17" x2="17" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
 
 const DEFAULT_SETTINGS: TerminalSettings = {
 	stripFormattingOnPaste: true,
@@ -1250,8 +1260,8 @@ export class TerminalView extends ItemView {
 	private isRenaming = false;
 
 	getViewType(): string { return VIEW_TYPE; }
-	getDisplayText(): string { return "Terminal"; }
-	getIcon(): string { return "terminal"; }
+	getDisplayText(): string { return "Wolf Terminal"; }
+	getIcon(): string { return WOLF_ICON_ID; }
 
 	getState() {
 		return {
@@ -1467,7 +1477,7 @@ class ShortcutsModal extends Modal {
 	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.addClass("vin-shortcuts-modal");
-		contentEl.createEl("h3", { text: "Terminal Shortcuts" });
+		contentEl.createEl("h3", { text: "Wolf Terminal Shortcuts" });
 		const shortcuts: [string, string][] = [
 			["Cmd+Shift+S", "Capture output to note"],
 			["Cmd+Shift+M", "Add bookmark"],
@@ -1543,7 +1553,7 @@ class TerminalSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.createEl("h2", { text: "My Terminal" });
+		containerEl.createEl("h2", { text: "Wolf Terminal" });
 		containerEl.createEl("p", {
 			text: "Embedded terminal with tabs, bookmarks, wiki-link autocomplete, and output capture.",
 			cls: "vin-settings-desc",
@@ -1713,6 +1723,7 @@ export default class TerminalPlugin extends Plugin {
 	async onload(): Promise<void> {
 		await this.loadSettings();
 		pluginSettings = this.settings;
+		addIcon(WOLF_ICON_ID, WOLF_ICON_SVG);
 
 		const fs = require("fs");
 		const path = require("path");
@@ -1722,12 +1733,12 @@ export default class TerminalPlugin extends Plugin {
 		ptyHelperPath = helperPath;
 
 		if (!python3Available()) {
-			new Notice("My Terminal: python3 not found.\nFix: brew install python3\nThen reload Obsidian.");
+			new Notice("Wolf Terminal: python3 not found.\nFix: brew install python3\nThen reload Obsidian.");
 		}
 
 		this.addSettingTab(new TerminalSettingTab(this.app, this));
 		this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => new TerminalView(leaf));
-		this.addRibbonIcon("terminal", "Open Terminal", () => { this.toggleTerminalSide(); });
+		this.addRibbonIcon(WOLF_ICON_ID, "Open Wolf Terminal", () => { this.toggleTerminalSide(); });
 
 		this.addCommand({ id: "open-terminal", name: "Open Terminal", callback: () => this.toggleTerminalSide() });
 		this.addCommand({ id: "open-terminal-tab", name: "Open Terminal in Tab", callback: () => this.openTerminalTab() });

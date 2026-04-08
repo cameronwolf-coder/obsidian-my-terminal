@@ -6773,6 +6773,8 @@ var import_obsidian = require("obsidian");
 var import_xterm = __toESM(require_xterm());
 var import_addon_fit = __toESM(require_addon_fit());
 var VIEW_TYPE = "vin-terminal-view";
+var WOLF_ICON_ID = "wolf-terminal";
+var WOLF_ICON_SVG = '<rect x="2" y="8" width="20" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M5 8L3 2L10 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 8L21 2L14 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 12l3 2.5-3 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="17" x2="17" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
 var DEFAULT_SETTINGS = {
   stripFormattingOnPaste: true,
   rightClickPaste: true,
@@ -8112,10 +8114,10 @@ var TerminalView = class extends import_obsidian.ItemView {
     return VIEW_TYPE;
   }
   getDisplayText() {
-    return "Terminal";
+    return "Wolf Terminal";
   }
   getIcon() {
-    return "terminal";
+    return WOLF_ICON_ID;
   }
   getState() {
     var _a, _b;
@@ -8380,7 +8382,7 @@ var ShortcutsModal = class extends import_obsidian.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.addClass("vin-shortcuts-modal");
-    contentEl.createEl("h3", { text: "Terminal Shortcuts" });
+    contentEl.createEl("h3", { text: "Wolf Terminal Shortcuts" });
     const shortcuts = [
       ["Cmd+Shift+S", "Capture output to note"],
       ["Cmd+Shift+M", "Add bookmark"],
@@ -8463,7 +8465,7 @@ var TerminalSettingTab = class extends import_obsidian.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "My Terminal" });
+    containerEl.createEl("h2", { text: "Wolf Terminal" });
     containerEl.createEl("p", {
       text: "Embedded terminal with tabs, bookmarks, wiki-link autocomplete, and output capture.",
       cls: "vin-settings-desc"
@@ -8576,6 +8578,7 @@ var TerminalPlugin = class extends import_obsidian.Plugin {
   async onload() {
     await this.loadSettings();
     pluginSettings = this.settings;
+    (0, import_obsidian.addIcon)(WOLF_ICON_ID, WOLF_ICON_SVG);
     const fs = require("fs");
     const path = require("path");
     const vaultBase = this.app.vault.adapter.basePath;
@@ -8583,11 +8586,11 @@ var TerminalPlugin = class extends import_obsidian.Plugin {
     fs.writeFileSync(helperPath, PTY_HELPER_SRC, { mode: 493 });
     ptyHelperPath = helperPath;
     if (!python3Available()) {
-      new import_obsidian.Notice("My Terminal: python3 not found.\nFix: brew install python3\nThen reload Obsidian.");
+      new import_obsidian.Notice("Wolf Terminal: python3 not found.\nFix: brew install python3\nThen reload Obsidian.");
     }
     this.addSettingTab(new TerminalSettingTab(this.app, this));
     this.registerView(VIEW_TYPE, (leaf) => new TerminalView(leaf));
-    this.addRibbonIcon("terminal", "Open Terminal", () => {
+    this.addRibbonIcon(WOLF_ICON_ID, "Open Wolf Terminal", () => {
       this.toggleTerminalSide();
     });
     this.addCommand({ id: "open-terminal", name: "Open Terminal", callback: () => this.toggleTerminalSide() });

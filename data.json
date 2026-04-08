@@ -1,5 +1,16 @@
 {
   "stripFormattingOnPaste": false,
+  "rightClickPaste": true,
+  "copyOnSelect": false,
   "autoCdOnOpen": false,
-  "followActiveNote": false
+  "followActiveNote": false,
+  "composeBox": true,
+  "fontSize": 13.5,
+  "fontFamily": "'SF Mono', 'IBM Plex Mono', ui-monospace, 'Cascadia Code', monospace",
+  "scrollback": 5000,
+  "cursorStyle": "block",
+  "cursorBlink": true,
+  "bellStyle": "none",
+  "shell": "/bin/zsh",
+  "startupCommand": ""
 }

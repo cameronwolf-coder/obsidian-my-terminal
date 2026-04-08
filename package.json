@@ -1,7 +1,7 @@
 {
-	"name": "my-terminal",
-	"version": "1.4.0",
-	"description": "Embedded terminal for Obsidian — local fork with clean paste, auto-cd, and capture to note",
+	"name": "wolf-terminal",
+	"version": "1.5.0",
+	"description": "Wolf Terminal — embedded terminal for Obsidian",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",

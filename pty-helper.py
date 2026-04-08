@@ -17,7 +17,8 @@ def main():
         os.dup2(slave, 2)
         if slave > 2:
             os.close(slave)
-        os.execvp("/bin/zsh", ["/bin/zsh", "-i", "-l"])
+        shell = os.environ.get("VIN_SHELL", "/bin/zsh")
+        os.execvp(shell, [shell, "-i", "-l"])
     os.close(slave)
     def resize(c, r):
         fcntl.ioctl(master, termios.TIOCSWINSZ,
