@@ -7468,10 +7468,12 @@ var TerminalSession = class {
         return;
       e.preventDefault();
       const sel = this.terminal.getSelection();
+      const menu = new import_obsidian.Menu();
       if (sel) {
-        navigator.clipboard.writeText(sel).catch(() => {
-        });
-      } else {
+        menu.addItem((item) => item.setTitle("Copy").setIcon("copy").onClick(() => navigator.clipboard.writeText(sel).catch(() => {
+        })));
+      }
+      menu.addItem((item) => item.setTitle("Paste").setIcon("clipboard").onClick(() => {
         navigator.clipboard.readText().then((text) => {
           if (!text)
             return;
@@ -7479,7 +7481,9 @@ var TerminalSession = class {
           this.terminal.input(clean, true);
         }).catch(() => {
         });
-      }
+      }));
+      menu.addItem((item) => item.setTitle("Clear").setIcon("eraser").onClick(() => this.terminal.clear()));
+      menu.showAtMouseEvent(e);
     });
     this.terminal.onSelectionChange(() => {
       if (!pluginSettings.copyOnSelect)

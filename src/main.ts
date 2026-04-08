@@ -737,15 +737,22 @@ class TerminalSession {
 			if (!pluginSettings.rightClickPaste) return;
 			e.preventDefault();
 			const sel = this.terminal.getSelection();
+			const menu = new Menu();
 			if (sel) {
-				navigator.clipboard.writeText(sel).catch(() => {});
-			} else {
-				navigator.clipboard.readText().then((text) => {
-					if (!text) return;
-					const clean = pluginSettings.stripFormattingOnPaste ? stripAnsiRaw(text) : text;
-					this.terminal.input(clean, true);
-				}).catch(() => {});
+				menu.addItem((item) => item.setTitle("Copy").setIcon("copy")
+					.onClick(() => navigator.clipboard.writeText(sel).catch(() => {})));
 			}
+			menu.addItem((item) => item.setTitle("Paste").setIcon("clipboard")
+				.onClick(() => {
+					navigator.clipboard.readText().then((text) => {
+						if (!text) return;
+						const clean = pluginSettings.stripFormattingOnPaste ? stripAnsiRaw(text) : text;
+						this.terminal.input(clean, true);
+					}).catch(() => {});
+				}));
+			menu.addItem((item) => item.setTitle("Clear").setIcon("eraser")
+				.onClick(() => this.terminal.clear()));
+			menu.showAtMouseEvent(e as MouseEvent);
 		});
 
 		this.terminal.onSelectionChange(() => {
