@@ -6774,7 +6774,10 @@ var import_xterm = __toESM(require_xterm());
 var import_addon_fit = __toESM(require_addon_fit());
 var VIEW_TYPE = "vin-terminal-view";
 var WOLF_ICON_ID = "wolf-terminal";
-var WOLF_ICON_SVG = '<rect x="2" y="8" width="20" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M5 8L3 2L10 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 8L21 2L14 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 12l3 2.5-3 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="17" x2="17" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+var WOLF_ICON_SVG = (
+  // Terminal body
+  '<rect x="5" y="28" width="90" height="62" rx="6" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/><path d="M8 28L16 4L40 28" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M60 28L84 4L92 28" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 50l20 9-20 9" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><line x1="44" y1="66" x2="78" y2="66" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>'
+);
 var DEFAULT_SETTINGS = {
   stripFormattingOnPaste: true,
   rightClickPaste: true,

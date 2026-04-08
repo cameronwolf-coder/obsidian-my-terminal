@@ -64,12 +64,18 @@ const VIEW_TYPE = "vin-terminal-view";
 
 // Wolf terminal icon: terminal window with pointed wolf ears
 const WOLF_ICON_ID = "wolf-terminal";
+// Obsidian addIcon uses a 0 0 100 100 viewBox — coordinates must be in that space.
 const WOLF_ICON_SVG =
-	'<rect x="2" y="8" width="20" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>' +
-	'<path d="M5 8L3 2L10 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
-	'<path d="M19 8L21 2L14 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
-	'<path d="M6 12l3 2.5-3 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
-	'<line x1="12" y1="17" x2="17" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+	// Terminal body
+	'<rect x="5" y="28" width="90" height="62" rx="6" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>' +
+	// Left wolf ear (triangle sitting on top-left of rect)
+	'<path d="M8 28L16 4L40 28" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>' +
+	// Right wolf ear (triangle sitting on top-right of rect)
+	'<path d="M60 28L84 4L92 28" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>' +
+	// > prompt
+	'<path d="M18 50l20 9-20 9" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>' +
+	// _ cursor
+	'<line x1="44" y1="66" x2="78" y2="66" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>';
 
 const DEFAULT_SETTINGS: TerminalSettings = {
 	stripFormattingOnPaste: true,
