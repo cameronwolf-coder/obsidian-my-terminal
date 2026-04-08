@@ -19,8 +19,19 @@ import { FitAddon } from "@xterm/addon-fit";
 
 interface TerminalSettings {
 	stripFormattingOnPaste: boolean;
+	rightClickPaste: boolean;
+	copyOnSelect: boolean;
 	autoCdOnOpen: boolean;
 	followActiveNote: boolean;
+	composeBox: boolean;
+	fontSize: number;
+	fontFamily: string;
+	scrollback: number;
+	cursorStyle: "block" | "underline" | "bar";
+	cursorBlink: boolean;
+	bellStyle: "none" | "visual";
+	shell: string;
+	startupCommand: string;
 }
 
 interface WikiEntry {
@@ -52,8 +63,19 @@ const VIEW_TYPE = "vin-terminal-view";
 
 const DEFAULT_SETTINGS: TerminalSettings = {
 	stripFormattingOnPaste: true,
+	rightClickPaste: true,
+	copyOnSelect: false,
 	autoCdOnOpen: true,
 	followActiveNote: false,
+	composeBox: false,
+	fontSize: 13.5,
+	fontFamily: "'SF Mono', 'IBM Plex Mono', ui-monospace, 'Cascadia Code', monospace",
+	scrollback: 5000,
+	cursorStyle: "block",
+	cursorBlink: true,
+	bellStyle: "none",
+	shell: "/bin/zsh",
+	startupCommand: "",
 };
 
 let pluginSettings: TerminalSettings = { ...DEFAULT_SETTINGS };
@@ -79,7 +101,8 @@ const PTY_HELPER_SRC = [
 	"        os.dup2(slave, 2)",
 	"        if slave > 2:",
 	"            os.close(slave)",
-	'        os.execvp("/bin/zsh", ["/bin/zsh", "-i", "-l"])',
+	'        shell = os.environ.get("VIN_SHELL", "/bin/zsh")',
+	'        os.execvp(shell, [shell, "-i", "-l"])',
 	"    os.close(slave)",
 	"    def resize(c, r):",
 	"        fcntl.ioctl(master, termios.TIOCSWINSZ,",
@@ -636,8 +659,12 @@ class TerminalSession {
 		this.name = `zsh ${id}`;
 		this.containerEl = parent.createDiv({ cls: "vin-terminal-session" });
 		this.terminal = new Terminal({
-			cursorBlink: true, fontSize: 13.5, lineHeight: 1.4, letterSpacing: 0.3,
-			fontFamily: "'SF Mono', 'IBM Plex Mono', ui-monospace, 'Cascadia Code', monospace",
+			cursorBlink: pluginSettings.cursorBlink,
+			cursorStyle: pluginSettings.cursorStyle,
+			fontSize: pluginSettings.fontSize,
+			fontFamily: pluginSettings.fontFamily,
+			scrollback: pluginSettings.scrollback,
+			lineHeight: 1.4, letterSpacing: 0.3,
 			fontWeight: "400", fontWeightBold: "600",
 			theme: getObsidianTheme(), allowProposedApi: true,
 		});
@@ -645,12 +672,17 @@ class TerminalSession {
 		this.terminal.loadAddon(this.fitAddon);
 		this.terminal.open(this.containerEl);
 		this.textareaEl = this.containerEl.querySelector(".xterm-helper-textarea");
+		this.terminal.onBell(() => {
+			if (pluginSettings.bellStyle !== "visual") return;
+			this.containerEl.classList.add("vin-bell-flash");
+			setTimeout(() => this.containerEl.classList.remove("vin-bell-flash"), 150);
+		});
 
 		const { spawn } = require("child_process");
 		const { CLAUDECODE, ...cleanEnv } = process.env;
 		this.process = spawn("python3", [ptyHelperPath], {
 			cwd,
-			env: { ...cleanEnv, TERM: "xterm-256color", LANG: "en_US.UTF-8", VIN_TERM_COLS: "80", VIN_TERM_ROWS: "24" },
+			env: { ...cleanEnv, TERM: "xterm-256color", LANG: "en_US.UTF-8", VIN_TERM_COLS: "80", VIN_TERM_ROWS: "24", VIN_SHELL: pluginSettings.shell },
 		});
 
 		this.autocomplete = new WikiLinkAutocomplete(
@@ -676,6 +708,10 @@ class TerminalSession {
 
 		setTimeout(() => this.fit(), 50);
 
+		if (pluginSettings.startupCommand.trim()) {
+			setTimeout(() => { this.process.stdin?.write(pluginSettings.startupCommand.trim() + "\n"); }, 800);
+		}
+
 		if (this.textareaEl) {
 			this.textareaEl.addEventListener("paste", (e) => {
 				if (!pluginSettings.stripFormattingOnPaste) return;
@@ -686,6 +722,27 @@ class TerminalSession {
 				this.terminal.input(stripAnsiRaw(raw), true);
 			});
 		}
+
+		this.containerEl.addEventListener("contextmenu", (e) => {
+			if (!pluginSettings.rightClickPaste) return;
+			e.preventDefault();
+			const sel = this.terminal.getSelection();
+			if (sel) {
+				navigator.clipboard.writeText(sel).catch(() => {});
+			} else {
+				navigator.clipboard.readText().then((text) => {
+					if (!text) return;
+					const clean = pluginSettings.stripFormattingOnPaste ? stripAnsiRaw(text) : text;
+					this.terminal.input(clean, true);
+				}).catch(() => {});
+			}
+		});
+
+		this.terminal.onSelectionChange(() => {
+			if (!pluginSettings.copyOnSelect) return;
+			const sel = this.terminal.getSelection();
+			if (sel) navigator.clipboard.writeText(sel).catch(() => {});
+		});
 
 		this.setupDragAndDrop(app);
 	}
@@ -844,6 +901,14 @@ class TerminalSession {
 	hide(): void { this.containerEl.removeClass("is-active"); }
 
 	updateTheme(): void { this.terminal.options.theme = getObsidianTheme(); }
+
+	updateOptions(): void {
+		this.terminal.options.fontSize = pluginSettings.fontSize;
+		this.terminal.options.fontFamily = pluginSettings.fontFamily;
+		this.terminal.options.cursorStyle = pluginSettings.cursorStyle;
+		this.terminal.options.cursorBlink = pluginSettings.cursorBlink;
+		this.fit();
+	}
 
 	addBookmark(label?: string): void { this.bookmarkManager?.addBookmark(label); }
 	nextBookmark(): void { this.bookmarkManager?.jumpNext(); }
@@ -1178,6 +1243,8 @@ export class TerminalView extends ItemView {
 	sessionsEl!: HTMLElement;
 	fullscreenManager: FullscreenManager | null = null;
 
+	private composeEl: HTMLElement | null = null;
+	private composeTextarea: HTMLTextAreaElement | null = null;
 	private resizeObserver: ResizeObserver | null = null;
 	private resizeTimer: ReturnType<typeof setTimeout> | null = null;
 	private isRenaming = false;
@@ -1223,9 +1290,34 @@ export class TerminalView extends ItemView {
 		container.addEventListener("wheel", (e) => e.stopPropagation());
 		container.addEventListener("mousedown", (e) => {
 			if ((e.target as HTMLElement).closest(".vin-terminal-tab-bar")) return;
+			if ((e.target as HTMLElement).closest(".vin-compose-box")) return;
 			setTimeout(() => this.activeSession?.focus(), 0);
 		});
 		this.tabBarEl = container.createDiv({ cls: "vin-terminal-tab-bar" });
+
+		// Compose box — always in DOM between tab bar and sessions, shown/hidden via class
+		this.composeEl = container.createDiv({ cls: "vin-compose-box" + (pluginSettings.composeBox ? "" : " is-hidden") });
+		const composeTextarea = this.composeEl.createEl("textarea", { cls: "vin-compose-input" });
+		composeTextarea.placeholder = "Compose a command\u2026 Ctrl+Enter to send";
+		composeTextarea.rows = 2;
+		this.composeTextarea = composeTextarea;
+		const composeFooter = this.composeEl.createDiv({ cls: "vin-compose-footer" });
+		composeFooter.createSpan({ cls: "vin-compose-hint", text: "Ctrl+Enter \u00b7 send   Esc \u00b7 clear" });
+		const composeBtn = composeFooter.createEl("button", { cls: "vin-compose-send", text: "Send" });
+		const sendCompose = () => {
+			const text = composeTextarea.value.trim();
+			if (!text) return;
+			this.activeSession?.process.stdin?.write(text + "\n");
+			composeTextarea.value = "";
+			this.activeSession?.focus();
+		};
+		composeTextarea.addEventListener("keydown", (e) => {
+			e.stopPropagation();
+			if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); sendCompose(); }
+			if (e.key === "Escape") { e.preventDefault(); composeTextarea.value = ""; }
+		});
+		composeBtn.addEventListener("click", sendCompose);
+
 		this.sessionsEl = container.createDiv({ cls: "vin-terminal-sessions" });
 		this.resizeObserver = new ResizeObserver(() => {
 			if (this.resizeTimer) clearTimeout(this.resizeTimer);
@@ -1286,6 +1378,10 @@ export class TerminalView extends ItemView {
 	}
 
 	saveState(): void { this.app.workspace.requestSaveLayout(); }
+
+	setComposeBox(show: boolean): void {
+		this.composeEl?.classList.toggle("is-hidden", !show);
+	}
 
 	switchTo(session: TerminalSession): void {
 		if (session === this.activeSession) return;
@@ -1449,26 +1545,130 @@ class TerminalSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl("h2", { text: "My Terminal" });
 		containerEl.createEl("p", {
-			text: "Embedded zsh terminal with tabs, bookmarks, wiki-link autocomplete, and output capture.",
+			text: "Embedded terminal with tabs, bookmarks, wiki-link autocomplete, and output capture.",
 			cls: "vin-settings-desc",
 		});
 
-		containerEl.createEl("span", { text: "Paste", cls: "vin-settings-section" });
+		// ─── Paste & Selection ────────────────────────────────────────────────────
+		containerEl.createEl("span", { text: "Paste & Selection", cls: "vin-settings-section" });
 		new Setting(containerEl)
 			.setName("Strip formatting on paste")
-			.setDesc("Remove ANSI color codes and escape sequences on paste. Fixes garbled output when copying from Claude Code or other terminal emulators.")
-			.addToggle((t) => t.setValue(this.plugin.settings.stripFormattingOnPaste).onChange(async (v) => { this.plugin.settings.stripFormattingOnPaste = v; await this.plugin.saveSettings(); }));
+			.setDesc("Remove ANSI color codes on paste. Fixes garbled output when copying from Claude Code or other terminal emulators.")
+			.addToggle((t) => t.setValue(this.plugin.settings.stripFormattingOnPaste).onChange(async (v) => {
+				this.plugin.settings.stripFormattingOnPaste = v; await this.plugin.saveSettings();
+			}));
+		new Setting(containerEl)
+			.setName("Right-click paste")
+			.setDesc("Right-click inside the terminal to paste from clipboard. If text is selected, right-click copies it instead.")
+			.addToggle((t) => t.setValue(this.plugin.settings.rightClickPaste).onChange(async (v) => {
+				this.plugin.settings.rightClickPaste = v; await this.plugin.saveSettings();
+			}));
+		new Setting(containerEl)
+			.setName("Copy on select")
+			.setDesc("Automatically copy selected text to clipboard when you release the mouse.")
+			.addToggle((t) => t.setValue(this.plugin.settings.copyOnSelect).onChange(async (v) => {
+				this.plugin.settings.copyOnSelect = v; await this.plugin.saveSettings();
+			}));
 
+		// ─── Appearance ───────────────────────────────────────────────────────────
+		containerEl.createEl("span", { text: "Appearance", cls: "vin-settings-section" });
+		new Setting(containerEl)
+			.setName("Font size")
+			.setDesc("Terminal font size in pixels (10–20).")
+			.addSlider((s) => s.setLimits(10, 20, 0.5).setValue(this.plugin.settings.fontSize).setDynamicTooltip()
+				.onChange(async (v) => {
+					this.plugin.settings.fontSize = v; await this.plugin.saveSettings();
+					this.plugin.updateAllViews();
+				}));
+		new Setting(containerEl)
+			.setName("Font family")
+			.setDesc("Monospace font stack. Comma-separated fallbacks.")
+			.addText((t) => t.setValue(this.plugin.settings.fontFamily).setPlaceholder("'SF Mono', monospace")
+				.onChange(async (v) => {
+					this.plugin.settings.fontFamily = v.trim() || DEFAULT_SETTINGS.fontFamily;
+					await this.plugin.saveSettings(); this.plugin.updateAllViews();
+				}));
+		new Setting(containerEl)
+			.setName("Cursor style")
+			.setDesc("Shape of the terminal cursor.")
+			.addDropdown((d) => d
+				.addOption("block", "Block").addOption("underline", "Underline").addOption("bar", "Bar")
+				.setValue(this.plugin.settings.cursorStyle)
+				.onChange(async (v) => {
+					this.plugin.settings.cursorStyle = v as "block" | "underline" | "bar";
+					await this.plugin.saveSettings(); this.plugin.updateAllViews();
+				}));
+		new Setting(containerEl)
+			.setName("Cursor blink")
+			.addToggle((t) => t.setValue(this.plugin.settings.cursorBlink).onChange(async (v) => {
+				this.plugin.settings.cursorBlink = v; await this.plugin.saveSettings();
+				this.plugin.updateAllViews();
+			}));
+		new Setting(containerEl)
+			.setName("Bell style")
+			.setDesc("How to respond to the terminal bell character.")
+			.addDropdown((d) => d
+				.addOption("none", "None (silent)").addOption("visual", "Visual flash")
+				.setValue(this.plugin.settings.bellStyle)
+				.onChange(async (v) => {
+					this.plugin.settings.bellStyle = v as "none" | "visual";
+					await this.plugin.saveSettings(); this.plugin.updateAllViews();
+				}));
+
+		// ─── Buffer ───────────────────────────────────────────────────────────────
+		containerEl.createEl("span", { text: "Buffer", cls: "vin-settings-section" });
+		new Setting(containerEl)
+			.setName("Scrollback lines")
+			.setDesc("Lines to keep in the scroll buffer. Higher values use more memory. Takes effect on new tabs.")
+			.addText((t) => t.setValue(String(this.plugin.settings.scrollback)).setPlaceholder("5000")
+				.onChange(async (v) => {
+					const n = parseInt(v, 10);
+					if (!isNaN(n) && n > 0) { this.plugin.settings.scrollback = n; await this.plugin.saveSettings(); }
+				}));
+
+		// ─── Shell ────────────────────────────────────────────────────────────────
+		containerEl.createEl("span", { text: "Shell", cls: "vin-settings-section" });
+		new Setting(containerEl)
+			.setName("Shell path")
+			.setDesc("Path to the shell executable. Takes effect on new tabs.")
+			.addText((t) => t.setValue(this.plugin.settings.shell).setPlaceholder("/bin/zsh")
+				.onChange(async (v) => {
+					this.plugin.settings.shell = v.trim() || "/bin/zsh"; await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName("Startup command")
+			.setDesc("Command to run after the shell initializes in each new tab (e.g. source ~/.work_env).")
+			.addText((t) => t.setValue(this.plugin.settings.startupCommand).setPlaceholder("source ~/.work_env")
+				.onChange(async (v) => {
+					this.plugin.settings.startupCommand = v; await this.plugin.saveSettings();
+				}));
+
+		// ─── Input ────────────────────────────────────────────────────────────────
+		containerEl.createEl("span", { text: "Input", cls: "vin-settings-section" });
+		new Setting(containerEl)
+			.setName("Compose box")
+			.setDesc("Show a multi-line text editor above the terminal. Write and edit a command freely, then send it with Ctrl+Enter.")
+			.addToggle((t) => t.setValue(this.plugin.settings.composeBox).onChange(async (v) => {
+				this.plugin.settings.composeBox = v; await this.plugin.saveSettings();
+				this.plugin.updateAllViews();
+			}));
+
+		// ─── Navigation ───────────────────────────────────────────────────────────
 		containerEl.createEl("span", { text: "Navigation", cls: "vin-settings-section" });
 		new Setting(containerEl)
 			.setName("Auto-cd to active note on open")
 			.setDesc("When you open a new terminal tab, start in the directory of your currently active note instead of the vault root.")
-			.addToggle((t) => t.setValue(this.plugin.settings.autoCdOnOpen).onChange(async (v) => { this.plugin.settings.autoCdOnOpen = v; await this.plugin.saveSettings(); }));
+			.addToggle((t) => t.setValue(this.plugin.settings.autoCdOnOpen).onChange(async (v) => {
+				this.plugin.settings.autoCdOnOpen = v; await this.plugin.saveSettings();
+			}));
 		new Setting(containerEl)
 			.setName("Follow active note")
 			.setDesc("When you switch to a different note, automatically cd the terminal to that note's directory. Debounced 300ms.")
-			.addToggle((t) => t.setValue(this.plugin.settings.followActiveNote).onChange(async (v) => { this.plugin.settings.followActiveNote = v; await this.plugin.saveSettings(); }));
+			.addToggle((t) => t.setValue(this.plugin.settings.followActiveNote).onChange(async (v) => {
+				this.plugin.settings.followActiveNote = v; await this.plugin.saveSettings();
+			}));
 
+		// ─── Keyboard shortcuts ───────────────────────────────────────────────────
 		containerEl.createEl("span", { text: "Keyboard shortcuts", cls: "vin-settings-section" });
 		const table = containerEl.createEl("table", { cls: "vin-settings-shortcuts-table" });
 		const shortcuts: [string, string][] = [
@@ -1476,6 +1676,8 @@ class TerminalSettingTab extends PluginSettingTab {
 			["Add bookmark", "⌘⇧M"],
 			["Next bookmark", "⌘⇧]"],
 			["Previous bookmark", "⌘⇧["],
+			["Compose box: send", "Ctrl+Enter"],
+			["Compose box: clear", "Esc"],
 			["Toggle fullscreen", "via command palette"],
 		];
 		for (const [label, key] of shortcuts) {
@@ -1498,6 +1700,14 @@ export default class TerminalPlugin extends Plugin {
 	async saveSettings(): Promise<void> {
 		pluginSettings = this.settings;
 		await this.saveData(this.settings);
+	}
+
+	updateAllViews(): void {
+		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
+			const view = leaf.view as TerminalView;
+			view.setComposeBox(pluginSettings.composeBox);
+			for (const session of view.sessions) session.updateOptions();
+		}
 	}
 
 	async onload(): Promise<void> {
